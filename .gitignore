@@ -1,0 +1,41 @@
+# Node / Next.js
+node_modules/
+.next/
+out/
+.vercel/
+dist/
+*.tsbuildinfo
+
+# Python / FastAPI
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Env files (any flavor)
+.env.local
+.env.*.local
+apps/web/.env*
+!apps/web/.env.example
+apps/worker/.env*
+!apps/worker/.env.example
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Build / temp artifacts
+tmp/
+*.log
+coverage/
+.turbo/
+
+# Worker scratch
+apps/worker/.cache/
+apps/worker/output/
