@@ -23,18 +23,18 @@ const SITE_URL =
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Memorial AI — In Loving Memory",
+  title: "Rememberance AI — In Loving Memory",
   description:
     "Turn the words and voice a loved one left behind into a chattable, voice-enabled remembrance.",
   icons: {
     icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
   },
   openGraph: {
-    title: "Memorial AI",
+    title: "Rememberance AI",
     description:
       "Turn the words and voice a loved one left behind into a chattable, voice-enabled remembrance.",
     type: "website",
-    images: [{ url: "/og.svg", width: 1200, height: 630, alt: "Memorial AI" }],
+    images: [{ url: "/og.svg", width: 1200, height: 630, alt: "Rememberance AI" }],
   },
 };
 
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <header className="px-6 pt-8 pb-4">
             <a href="/" className="inline-flex items-center gap-3">
               <span className="font-serif text-2xl tracking-tight text-ink">
-                Memorial<span className="text-gold-500">.</span>AI
+                Rememberance<span className="text-gold-500">.</span>AI
               </span>
               <span className="hidden text-sm uppercase tracking-[0.18em] text-ink-muted sm:inline">
                 In Loving Memory
@@ -60,7 +60,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <footer className="px-6 pb-8 pt-4 text-center text-xs text-ink-muted">
             <div className="divider-gold mb-4" />
             <p>
-              Memorial AI is an interpretation built from material you upload. It is
+              Rememberance AI is an interpretation built from material you upload. It is
               not the real person.
             </p>
           </footer>

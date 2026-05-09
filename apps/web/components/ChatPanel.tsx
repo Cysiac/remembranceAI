@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { PresenceMood } from "@shared/types";
 
 import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 
 declare global {
@@ -12,17 +13,21 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       "elevenlabs-convai": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & { "agent-id"?: string },
+        React.HTMLAttributes<HTMLElement> & {
+          "agent-id"?: string;
+          "always-expanded"?: string;
+          dismissible?: string;
+          "mic-muting"?: string;
+          placement?: string;
+          transcript?: string;
+          "text-input"?: string;
+          variant?: string;
+          "override-first-message"?: string;
+        },
         HTMLElement
       >;
     }
   }
-}
-
-export interface ChatTurn {
-  role: "user" | "agent";
-  text: string;
-  at: number;
 }
 
 export interface ChatPanelProps {
@@ -38,7 +43,6 @@ export interface ChatPanelProps {
   registerSuggester?: (suggest: (prompt: string) => void) => void;
 }
 
-const TRANSCRIPT_MAX = 80;
 const PRESENCE_RESET_MS = 2800;
 
 export function ChatPanel({
@@ -50,14 +54,10 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const widgetRef = useRef<HTMLElement | null>(null);
   const presenceTimerRef = useRef<number | null>(null);
-  const [transcript, setTranscript] = useState<ChatTurn[]>(() =>
-    firstMessage
-      ? [{ role: "agent", text: firstMessage, at: Date.now() }]
-      : [],
-  );
   const [presenceMood, setPresenceMood] = useState<PresenceMood>(
     firstMessage ? "speaking" : "idle",
   );
+  const [chatOpen, setChatOpen] = useState(false);
 
   const setTimedPresenceMood = useCallback((mood: PresenceMood) => {
     setPresenceMood(mood);
@@ -71,7 +71,7 @@ export function ChatPanel({
   }, []);
 
   const showPresenceMood = useCallback(
-    (role: ChatTurn["role"]) => {
+    (role: "user" | "agent") => {
       setTimedPresenceMood(role === "agent" ? "speaking" : "listening");
     },
     [setTimedPresenceMood],
@@ -95,15 +95,9 @@ export function ChatPanel({
       if (!detail) return;
       const text = (detail.message ?? detail.text ?? "").toString().trim();
       if (!text) return;
-      const role: "user" | "agent" =
-        detail.source === "user" || detail.role === "user" ? "user" : "agent";
-      showPresenceMood(role);
-      setTranscript((prev) => {
-        const next = [...prev, { role, text, at: Date.now() }];
-        return next.length > TRANSCRIPT_MAX
-          ? next.slice(next.length - TRANSCRIPT_MAX)
-          : next;
-      });
+      showPresenceMood(
+        detail.source === "user" || detail.role === "user" ? "user" : "agent",
+      );
     };
 
     widget.addEventListener("convai-message", onMessage as EventListener);
@@ -139,10 +133,14 @@ export function ChatPanel({
         widget.send(prompt);
       }
       showPresenceMood("user");
-      setTranscript((prev) => [
-        ...prev,
-        { role: "user", text: prompt, at: Date.now() },
-      ]);
+      widget.dispatchEvent(
+        new CustomEvent("elevenlabs-agent:expand", {
+          bubbles: true,
+          composed: true,
+          detail: { action: "expand" },
+        }),
+      );
+      setChatOpen(true);
     });
   }, [registerSuggester, showPresenceMood]);
 
@@ -161,53 +159,45 @@ export function ChatPanel({
       </div>
 
       <div className="rounded-2xl border border-parchment-200 bg-parchment-50 p-3">
-        <PresenceAvatar
-          mood={presenceMood}
-          photoUrl={presencePortraits?.[presenceMood] ?? presencePhotoUrl}
-          onPreview={setTimedPresenceMood}
-        />
-        <elevenlabs-convai
-          ref={(el: HTMLElement | null) => {
-            widgetRef.current = el;
-          }}
-          agent-id={agentId}
-        />
-      </div>
+        <div className="grid gap-3 lg:grid-cols-[1fr_220px] lg:items-start">
+          <PresenceAvatar
+            mood={presenceMood}
+            photoUrl={presencePortraits?.[presenceMood] ?? presencePhotoUrl}
+            onPreview={setTimedPresenceMood}
+          />
 
-      <div>
-        <p className="mb-2 text-xs uppercase tracking-[0.12em] text-ink-muted">
-          Transcript
-        </p>
-        <div className="flex max-h-72 flex-col gap-2 overflow-y-auto rounded-xl border border-parchment-200 bg-white/70 p-3 text-sm">
-          {transcript.length === 0 ? (
-            <p className="text-ink-muted">
-              The conversation will mirror here as you talk.
+          <div className="rounded-2xl border border-parchment-200 bg-white/75 p-3 shadow-soft">
+            <p className="text-xs uppercase tracking-[0.14em] text-ink-muted">
+              Voice chat
             </p>
-          ) : (
-            transcript.map((turn, idx) => (
-              <div
-                key={`${turn.at}-${idx}`}
-                className={
-                  turn.role === "agent"
-                    ? "flex flex-col items-start"
-                    : "flex flex-col items-end"
-                }
-              >
-                <span className="text-[10px] uppercase tracking-[0.12em] text-ink-muted">
-                  {turn.role === "agent" ? "Them" : "You"}
-                </span>
-                <span
-                  className={
-                    turn.role === "agent"
-                      ? "max-w-[85%] rounded-2xl rounded-bl-sm bg-parchment-100 px-3 py-2 text-ink"
-                      : "max-w-[85%] rounded-2xl rounded-br-sm bg-gold-100 px-3 py-2 text-ink"
-                  }
-                >
-                  {turn.text}
-                </span>
-              </div>
-            ))
-          )}
+            <p className="mt-1 text-sm text-ink-soft">
+              Keep it tucked away until you are ready to talk.
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="mt-3 w-full"
+              onClick={() => setChatOpen((open) => !open)}
+            >
+              {chatOpen ? "Hide chat" : "Open chat"}
+            </Button>
+          </div>
+        </div>
+
+        <div className={chatOpen ? "mt-3" : "sr-only"}>
+          <elevenlabs-convai
+            className="rememberance-convai-widget"
+            ref={(el: HTMLElement | null) => {
+              widgetRef.current = el;
+            }}
+            agent-id={agentId}
+            placement="bottom-right"
+            transcript="true"
+            text-input="true"
+            mic-muting="true"
+            override-first-message={firstMessage}
+          />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/Card";
+import { HomeRememberanceTabs } from "@/components/HomeRememberanceTabs";
 
 const PILLARS: Array<{ title: string; body: string }> = [
   {
@@ -32,7 +33,7 @@ export default function LandingPage() {
             Talk with the people you miss most.
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-ink-soft">
-            Memorial AI gathers the words, voice, and photographs your loved one
+            Rememberance AI gathers the words, voice, and photographs your loved one
             left behind and weaves them into a gentle remembrance you can call up
             whenever you need to hear them again.
           </p>
@@ -51,7 +52,7 @@ export default function LandingPage() {
           </div>
 
           <p className="pt-2 text-xs text-ink-muted">
-            Memorial AI never claims to be the real person. Everything is an
+            Rememberance AI never claims to be the real person. Everything is an
             interpretation built from material you choose to share.
           </p>
         </div>
@@ -96,6 +97,8 @@ export default function LandingPage() {
           </Card>
         </div>
       </section>
+
+      <HomeRememberanceTabs />
 
       <section className="grid gap-4 sm:grid-cols-3">
         {PILLARS.map((pillar) => (
