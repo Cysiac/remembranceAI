@@ -5,7 +5,7 @@ pydantic==2.9.2
 pydantic-settings==2.6.1
 python-multipart==0.0.12
 supabase==2.10.0
-adaption-sdk==0.4.0; python_version >= "3.9"
+adaption>=0.3.1; python_version >= "3.9"
 mail-parser==4.1.0
 tenacity==9.0.0
 python-dotenv==1.0.1
