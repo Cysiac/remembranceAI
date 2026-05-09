@@ -10,8 +10,6 @@ import type { Persona } from "@shared/types";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
 import { ChatPanel } from "@/components/ChatPanel";
-import { DailyMemory } from "@/components/DailyMemory";
-import { EraPicker } from "@/components/EraPicker";
 import { LetterStudio } from "@/components/LetterStudio";
 import { MemoryAnchors } from "@/components/MemoryAnchors";
 import { PersonaStatus } from "@/components/PersonaStatus";
@@ -183,40 +181,10 @@ export default function PersonaPage() {
           </div>
 
           <aside className="lg:col-span-4 flex flex-col gap-6">
-            <DailyMemory
-              anchors={persona.metadata?.memoryAnchors ?? []}
-              catchphrases={persona.metadata?.catchphrases ?? []}
-              onSuggest={onSuggest}
-            />
-
             <MemoryAnchors
               anchors={persona.metadata?.memoryAnchors ?? []}
               onSuggest={onSuggest}
             />
-
-            <EraPicker
-              eraTags={persona.metadata?.eraTags}
-              onSuggest={onSuggest}
-            />
-
-            {persona.metadata?.catchphrases?.length ? (
-              <Card className="bg-parchment-50">
-                <CardTitle className="text-lg">Their voice patterns</CardTitle>
-                <CardDescription>
-                  Phrases that came up often in their writing.
-                </CardDescription>
-                <ul className="mt-3 flex flex-wrap gap-2">
-                  {persona.metadata.catchphrases.slice(0, 8).map((phrase) => (
-                    <li
-                      key={phrase}
-                      className="rounded-full border border-parchment-200 bg-white/70 px-3 py-1 text-xs text-ink-soft"
-                    >
-                      “{phrase}”
-                    </li>
-                  ))}
-                </ul>
-              </Card>
-            ) : null}
           </aside>
         </div>
       ) : null}
