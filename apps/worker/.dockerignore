@@ -1,0 +1,15 @@
+.venv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+.env
+.env.*
+!.env.example
+.DS_Store
+fixtures/
+*.log
+node_modules
+.git

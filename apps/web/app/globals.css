@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-serif: "Cormorant Garamond", "Georgia", serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+
+html,
+body {
+  background: linear-gradient(180deg, #fbf6ec 0%, #f4ebd8 100%);
+  color: theme("colors.ink.DEFAULT");
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-serif);
+  letter-spacing: -0.01em;
+}
+
+::selection {
+  background: theme("colors.gold.200");
+  color: theme("colors.ink.DEFAULT");
+}
+
+/* Subtle paper grain background for the memorial framing */
+.paper {
+  background-color: #fbf6ec;
+  background-image:
+    radial-gradient(circle at 25% 25%, rgba(161, 126, 63, 0.08) 0px, transparent 60%),
+    radial-gradient(circle at 75% 80%, rgba(161, 126, 63, 0.06) 0px, transparent 65%);
+}
+
+.divider-gold {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    theme("colors.gold.300") 50%,
+    transparent 100%
+  );
+}
