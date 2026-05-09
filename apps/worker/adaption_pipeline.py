@@ -40,8 +40,12 @@ class AdaptionResult:
 
 
 def _has_sdk() -> bool:
+    """Return True only if the installed `adaption` package exposes the exact
+    `AdaptionClient` symbol the rest of this module calls. Older/newer SDK
+    shapes (e.g. `adaption.Adaption` in 0.3.x) would otherwise silently break
+    the pipeline; we'd rather use the local fallback than crash the worker."""
     try:
-        import adaption  # type: ignore  # noqa: F401
+        from adaption import AdaptionClient  # type: ignore  # noqa: F401
         return True
     except Exception:
         return False
@@ -61,7 +65,8 @@ def run_pipeline(
     settings = get_settings()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    if not settings.adaption_api_key or not _has_sdk():
+    has_sdk = _has_sdk()
+    if not settings.adaption_api_key or not has_sdk:
         logger.warning(
             "Adaption SDK or key missing — using raw JSONL as cleaned dataset"
         )

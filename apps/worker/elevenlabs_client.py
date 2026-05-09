@@ -89,10 +89,12 @@ def create_agent(
     name: str,
     voice_id: str,
     system_prompt: str,
-    knowledge_base_doc_ids: list[str],
+    knowledge_base_docs: list[tuple[str, str]],
     first_message: str,
     language: str = "en",
 ) -> str:
+    """`knowledge_base_docs` is a list of (doc_name, doc_id) pairs. ElevenLabs
+    requires every knowledge_base entry to carry `name` alongside `id`/`type`."""
     payload = {
         "name": name,
         "conversation_config": {
@@ -100,7 +102,8 @@ def create_agent(
                 "prompt": {
                     "prompt": system_prompt,
                     "knowledge_base": [
-                        {"id": doc_id, "type": "file"} for doc_id in knowledge_base_doc_ids
+                        {"id": doc_id, "type": "file", "name": doc_name}
+                        for doc_name, doc_id in knowledge_base_docs
                     ],
                 },
                 "first_message": first_message,

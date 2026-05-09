@@ -4,12 +4,14 @@
  * Wraps `@google/genai` so the rest of the BE only sees:
  *   const mp4 = await generateVeoVideo({ prompt, imageBytes, mimeType });
  *
- * We always operate against the Gemini API (AI Studio), not Vertex AI — so the
- * input image is passed inline as base64 and the resulting MP4 is downloaded
- * over HTTPS using the API key as a query parameter.
+ * We operate against Vertex AI so billing is charged to the configured Google
+ * Cloud project instead of the AI Studio prepaid Gemini API balance.
  */
 
 import { Buffer } from "node:buffer";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { GoogleGenAI } from "@google/genai";
 
 export interface VeoGenerateOptions {
@@ -40,14 +42,43 @@ export class VeoGenerationError extends Error {
   }
 }
 
-function apiKey(): string {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new VeoGenerationError("GEMINI_API_KEY is not configured on the server");
-  return key;
+function vertexProject(): string {
+  const project =
+    process.env.GOOGLE_CLOUD_PROJECT ||
+    process.env.GCLOUD_PROJECT ||
+    process.env.VERTEX_AI_PROJECT;
+  if (!project) {
+    throw new VeoGenerationError(
+      "GOOGLE_CLOUD_PROJECT or VERTEX_AI_PROJECT must be set for Vertex AI Veo billing",
+    );
+  }
+  return project;
+}
+
+function vertexLocation(): string {
+  const location =
+    process.env.GOOGLE_CLOUD_LOCATION ||
+    process.env.GOOGLE_CLOUD_REGION ||
+    process.env.VERTEX_AI_LOCATION;
+  if (!location) {
+    throw new VeoGenerationError(
+      "GOOGLE_CLOUD_LOCATION or VERTEX_AI_LOCATION must be set for Vertex AI Veo billing",
+    );
+  }
+  return location;
 }
 
 function modelName(override?: string): string {
-  return override ?? process.env.GEMINI_VEO_MODEL ?? "veo-3.0-generate-preview";
+  const configured =
+    override ?? process.env.VERTEX_VEO_MODEL ?? process.env.GEMINI_VEO_MODEL;
+
+  // `veo-3.0-generate-preview` was valid for the old AI Studio path, but it is
+  // discontinued/not reliably available through Vertex AI. Keep existing envs
+  // working by upgrading that legacy value to a current Vertex image-to-video model.
+  if (!configured || configured === "veo-3.0-generate-preview") {
+    return "veo-3.1-fast-generate-001";
+  }
+  return configured;
 }
 
 /**
@@ -66,8 +97,9 @@ export async function generateVeoVideo(opts: VeoGenerateOptions): Promise<Buffer
     personGeneration = "allow_adult",
   } = opts;
 
-  const key = apiKey();
-  const ai = new GoogleGenAI({ apiKey: key });
+  const project = vertexProject();
+  const location = vertexLocation();
+  const ai = new GoogleGenAI({ vertexai: true, project, location });
 
   let operation;
   try {
@@ -115,25 +147,25 @@ export async function generateVeoVideo(opts: VeoGenerateOptions): Promise<Buffer
   }
 
   const generated = operation.response?.generatedVideos?.[0];
-  const fileUri = generated?.video?.uri;
-  if (!fileUri) {
+  if (!generated?.video) {
     throw new VeoGenerationError(
-      "Veo job completed but did not return a video URI",
+      "Veo job completed but did not return a generated video",
     );
   }
 
-  const downloadUrl = fileUri.includes("?")
-    ? `${fileUri}&key=${encodeURIComponent(key)}`
-    : `${fileUri}?key=${encodeURIComponent(key)}`;
-
-  const resp = await fetch(downloadUrl);
-  if (!resp.ok) {
+  const dir = await mkdtemp(path.join(tmpdir(), "memorial-veo-"));
+  const outPath = path.join(dir, "veo.mp4");
+  try {
+    await ai.files.download({ file: generated, downloadPath: outPath });
+    return await readFile(outPath);
+  } catch (err) {
     throw new VeoGenerationError(
-      `Veo MP4 download failed: ${resp.status} ${resp.statusText}`,
+      `Veo MP4 download failed: ${err instanceof Error ? err.message : String(err)}`,
+      err,
     );
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
   }
-  const arrayBuf = await resp.arrayBuffer();
-  return Buffer.from(arrayBuf);
 }
 
 /**
