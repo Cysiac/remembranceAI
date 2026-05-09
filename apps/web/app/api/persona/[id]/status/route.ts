@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import type { Persona } from "@shared/types";
 import { getServiceSupabase } from "@/lib/supabaseServer";
 import { rowToPersona } from "@/lib/personaMapper";
 
@@ -7,9 +8,16 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } },
 ): Promise<Response> {
+  const demoPersona = maybeDemoPersona(req, params.id);
+  if (demoPersona) {
+    return NextResponse.json(demoPersona, {
+      headers: { "cache-control": "no-store" },
+    });
+  }
+
   const supabase = getServiceSupabase();
   const { data, error } = await supabase
     .from("personas")
@@ -32,4 +40,37 @@ export async function GET(
   return NextResponse.json(rowToPersona(data), {
     headers: { "cache-control": "no-store" },
   });
+}
+
+function maybeDemoPersona(req: Request, id: string): Persona | null {
+  const url = new URL(req.url);
+  if (url.searchParams.get("demo") !== "1") return null;
+
+  const voiceId = process.env.DEMO_VOICE_ID;
+  const agentId = process.env.DEMO_AGENT_ID;
+  if (!voiceId || !agentId) return null;
+
+  return {
+    id,
+    name: "Grandma",
+    relationship: "grandmother",
+    status: "ready",
+    voice_id: voiceId,
+    agent_id: agentId,
+    metadata: {
+      catchphrases: ["come here, sweetheart", "put the kettle on"],
+      memoryAnchors: [
+        {
+          title: "The lake house",
+          people: ["Grandma", "family"],
+          description:
+            "Summer afternoons at the lake house, with stories over tea.",
+        },
+      ],
+      eraTags: ["demo"],
+      firstMessage: "Hi sweetheart — it's Grandma. I'm so glad you came by.",
+      toneSummary: "warm, gentle, nostalgic",
+    },
+    createdAt: new Date(0).toISOString(),
+  };
 }
