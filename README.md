@@ -41,3 +41,9 @@ memorial-ai/
 
 Read `AGENTS.md` first. Roles, file ownership, branch naming, and AI assistant
 rules are codified there.
+
+## Deploying
+
+See [`DEPLOY.md`](DEPLOY.md) for end-to-end deployment (Supabase, the FastAPI
+worker on Fly/Railway/Render, the Next.js app on Vercel, and pre-baking the
+demo persona).

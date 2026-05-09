@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "buildCommand": "next build",
+  "installCommand": "npm install",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/video/generate/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
+    "app/api/letter/generate/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/persona/create/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/persona/[id]/status/route.ts": {
+      "maxDuration": 10
+    },
+    "app/api/uploads/sign/route.ts": {
+      "maxDuration": 10
+    }
+  }
+}
