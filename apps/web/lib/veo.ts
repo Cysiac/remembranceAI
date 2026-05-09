@@ -100,7 +100,7 @@ export async function generateVeoVideo(opts: VeoGenerateOptions): Promise<Buffer
     }
     await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     try {
-      operation = await ai.operations.getVideosOperation({ operation });
+      operation = await pollOperation(ai, operation);
     } catch (err) {
       throw new VeoGenerationError(
         `Veo operation poll failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -134,4 +134,29 @@ export async function generateVeoVideo(opts: VeoGenerateOptions): Promise<Buffer
   }
   const arrayBuf = await resp.arrayBuffer();
   return Buffer.from(arrayBuf);
+}
+
+/**
+ * `@google/genai` exposes both a generic `operations.get` (Vertex/docs sample)
+ * and a video-specific `operations.getVideosOperation` (codegen guide). Try the
+ * specific one first and fall back so we don't hard-fail on minor SDK churn.
+ */
+async function pollOperation(
+  ai: GoogleGenAI,
+  operation: Awaited<ReturnType<GoogleGenAI["models"]["generateVideos"]>>,
+): Promise<typeof operation> {
+  const ops = ai.operations as unknown as Record<string, unknown>;
+  if (typeof ops.getVideosOperation === "function") {
+    return (ops.getVideosOperation as (args: { operation: typeof operation }) => Promise<typeof operation>)({
+      operation,
+    });
+  }
+  if (typeof ops.get === "function") {
+    return (ops.get as (args: { operation: typeof operation }) => Promise<typeof operation>)({
+      operation,
+    });
+  }
+  throw new VeoGenerationError(
+    "Installed @google/genai version exposes neither operations.getVideosOperation nor operations.get",
+  );
 }
