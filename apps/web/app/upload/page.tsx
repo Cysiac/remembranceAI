@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/Card";
 import { Input, Label, Textarea } from "@/components/ui/Input";
 import { UploadDropzone } from "@/components/UploadDropzone";
+import { saveRememberanceSummary } from "@/components/savedRememberanceStorage";
 import { uploadFile } from "@/lib/uploads";
 
 interface SubmitState {
@@ -94,6 +95,13 @@ export default function UploadPage() {
       }
       const created = (await res.json()) as CreatePersonaResponse;
 
+      saveRememberanceSummary({
+        personaId: created.persona_id,
+        name: body.name,
+        relationship: body.relationship,
+        note: memorialNote.trim() || undefined,
+      });
+
       // Stash photo-only file keys for the persona page so VideoStudio can offer
       // them as Veo reference candidates without re-fetching from Storage.
       try {
@@ -139,7 +147,7 @@ export default function UploadPage() {
         <Card className="bg-parchment-50">
           <CardTitle className="text-xl">Trust layer</CardTitle>
           <CardDescription>
-            Upload only what you have the right to share. Memorial AI is an
+            Upload only what you have the right to share. Rememberance AI is an
             interpretation; we never claim it is the real person.
           </CardDescription>
         </Card>
@@ -223,7 +231,7 @@ export default function UploadPage() {
             />
             <span>
               I attest that I have the right to use this material to build a
-              memorial AI persona, and I understand the result is an
+              Rememberance AI persona, and I understand the result is an
               interpretation, not the real person.
             </span>
           </label>

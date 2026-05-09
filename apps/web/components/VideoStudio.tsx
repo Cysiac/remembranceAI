@@ -207,7 +207,7 @@ export function VideoStudio({ personaId, candidatePhotoKeys, isDemo }: VideoStud
                 className="aspect-video w-full"
               />
               <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-black/45 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-white/90">
-                AI interpretation · Memorial.AI
+                AI interpretation · Rememberance.AI
               </div>
             </div>
             <a

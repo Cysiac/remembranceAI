@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/Card";
@@ -10,17 +10,21 @@ declare global {
   namespace JSX {
     interface IntrinsicElements {
       "elevenlabs-convai": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement> & { "agent-id"?: string },
+        React.HTMLAttributes<HTMLElement> & {
+          "agent-id"?: string;
+          "always-expanded"?: string;
+          dismissible?: string;
+          "mic-muting"?: string;
+          placement?: string;
+          transcript?: string;
+          "text-input"?: string;
+          variant?: string;
+          "override-first-message"?: string;
+        },
         HTMLElement
       >;
     }
   }
-}
-
-export interface ChatTurn {
-  role: "user" | "agent";
-  text: string;
-  at: number;
 }
 
 export interface ChatPanelProps {
@@ -34,44 +38,8 @@ export interface ChatPanelProps {
   registerSuggester?: (suggest: (prompt: string) => void) => void;
 }
 
-const TRANSCRIPT_MAX = 80;
-
 export function ChatPanel({ agentId, firstMessage, registerSuggester }: ChatPanelProps) {
   const widgetRef = useRef<HTMLElement | null>(null);
-  const [transcript, setTranscript] = useState<ChatTurn[]>(() =>
-    firstMessage
-      ? [{ role: "agent", text: firstMessage, at: Date.now() }]
-      : [],
-  );
-
-  useEffect(() => {
-    const widget = widgetRef.current;
-    if (!widget) return;
-
-    const onMessage = (event: Event) => {
-      const detail = (event as CustomEvent).detail as
-        | { message?: string; text?: string; source?: string; role?: string }
-        | undefined;
-      if (!detail) return;
-      const text = (detail.message ?? detail.text ?? "").toString().trim();
-      if (!text) return;
-      const role: "user" | "agent" =
-        detail.source === "user" || detail.role === "user" ? "user" : "agent";
-      setTranscript((prev) => {
-        const next = [...prev, { role, text, at: Date.now() }];
-        return next.length > TRANSCRIPT_MAX
-          ? next.slice(next.length - TRANSCRIPT_MAX)
-          : next;
-      });
-    };
-
-    widget.addEventListener("convai-message", onMessage as EventListener);
-    widget.addEventListener("message", onMessage as EventListener);
-    return () => {
-      widget.removeEventListener("convai-message", onMessage as EventListener);
-      widget.removeEventListener("message", onMessage as EventListener);
-    };
-  }, []);
 
   useEffect(() => {
     if (!registerSuggester) return;
@@ -89,10 +57,13 @@ export function ChatPanel({ agentId, firstMessage, registerSuggester }: ChatPane
       } else if (typeof widget.send === "function") {
         widget.send(prompt);
       }
-      setTranscript((prev) => [
-        ...prev,
-        { role: "user", text: prompt, at: Date.now() },
-      ]);
+      widget.dispatchEvent(
+        new CustomEvent("elevenlabs-agent:expand", {
+          bubbles: true,
+          composed: true,
+          detail: { action: "expand" },
+        }),
+      );
     });
   }, [registerSuggester]);
 
@@ -110,50 +81,22 @@ export function ChatPanel({ agentId, firstMessage, registerSuggester }: ChatPane
         </Badge>
       </div>
 
-      <div className="rounded-2xl border border-parchment-200 bg-parchment-50 p-3">
+      <div className="overflow-hidden rounded-2xl border border-parchment-200 bg-parchment-50 p-3">
         <elevenlabs-convai
+          className="rememberance-convai-widget"
           ref={(el: HTMLElement | null) => {
             widgetRef.current = el;
           }}
           agent-id={agentId}
+          variant="full"
+          placement="bottom"
+          transcript="true"
+          text-input="true"
+          mic-muting="true"
+          always-expanded="true"
+          dismissible="false"
+          override-first-message={firstMessage}
         />
-      </div>
-
-      <div>
-        <p className="mb-2 text-xs uppercase tracking-[0.12em] text-ink-muted">
-          Transcript
-        </p>
-        <div className="flex max-h-72 flex-col gap-2 overflow-y-auto rounded-xl border border-parchment-200 bg-white/70 p-3 text-sm">
-          {transcript.length === 0 ? (
-            <p className="text-ink-muted">
-              The conversation will mirror here as you talk.
-            </p>
-          ) : (
-            transcript.map((turn, idx) => (
-              <div
-                key={`${turn.at}-${idx}`}
-                className={
-                  turn.role === "agent"
-                    ? "flex flex-col items-start"
-                    : "flex flex-col items-end"
-                }
-              >
-                <span className="text-[10px] uppercase tracking-[0.12em] text-ink-muted">
-                  {turn.role === "agent" ? "Them" : "You"}
-                </span>
-                <span
-                  className={
-                    turn.role === "agent"
-                      ? "max-w-[85%] rounded-2xl rounded-bl-sm bg-parchment-100 px-3 py-2 text-ink"
-                      : "max-w-[85%] rounded-2xl rounded-br-sm bg-gold-100 px-3 py-2 text-ink"
-                  }
-                >
-                  {turn.text}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
       </div>
 
       <p className="text-xs text-ink-muted">
