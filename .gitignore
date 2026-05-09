@@ -4,6 +4,7 @@ node_modules/
 out/
 .vercel/
 dist/
+*.tsbuildinfo
 
 # Python / FastAPI
 __pycache__/
