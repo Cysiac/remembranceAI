@@ -9,6 +9,10 @@
       "maxDuration": 300,
       "memory": 1024
     },
+    "app/api/portraits/generate/route.ts": {
+      "maxDuration": 300,
+      "memory": 1024
+    },
     "app/api/letter/generate/route.ts": {
       "maxDuration": 60
     },

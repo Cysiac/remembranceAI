@@ -52,18 +52,17 @@ h4 {
 }
 
 elevenlabs-convai.rememberance-convai-widget {
-  --el-overlay-padding: 0px;
   display: block !important;
   position: relative !important;
   inset: auto !important;
   z-index: auto !important;
   width: 100%;
-  min-height: 620px;
+  min-height: 360px;
   pointer-events: auto !important;
 }
 
 @media (max-width: 640px) {
   elevenlabs-convai.rememberance-convai-widget {
-    min-height: 680px;
+    min-height: 420px;
   }
 }

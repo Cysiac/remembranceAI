@@ -59,6 +59,17 @@ export interface GenerateVideoResponse {
   video_url: string;
 }
 
+export type PresenceMood = "idle" | "listening" | "speaking";
+
+export interface GeneratePortraitsRequest {
+  persona_id: string;
+  reference_photo_key: string;
+}
+
+export interface GeneratePortraitsResponse {
+  portraits: Partial<Record<PresenceMood, string>>;
+}
+
 // Worker-internal request body (BE-only; never called from the browser)
 export interface WorkerJobRequest {
   persona_id: string;

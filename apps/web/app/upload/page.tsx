@@ -112,6 +112,13 @@ export default function UploadPage() {
           `persona:${created.persona_id}:photoKeys`,
           JSON.stringify(photoKeys),
         );
+        const firstPhoto = files.find((file) => file.type.startsWith("image/"));
+        if (firstPhoto) {
+          sessionStorage.setItem(
+            `persona:${created.persona_id}:photoPreviewUrl`,
+            URL.createObjectURL(firstPhoto),
+          );
+        }
       } catch {
         // ignore — best-effort only
       }
