@@ -167,14 +167,23 @@ def build_persona(
         first_message=first_message,
     )
 
+    existing_metadata = (
+        supabase_client.get_persona(persona_id) or {}
+    ).get("metadata") or {}
+    merged_metadata = {
+        **existing_metadata,
+        "catchphrases": catchphrases,
+        "memoryAnchors": memory_anchors,
+        "systemPrompt": system_prompt,
+        "firstMessage": first_message,
+        "toneSummary": tone_summary,
+    }
+
     supabase_client.update_persona(
         persona_id,
         voice_id=voice_id,
         agent_id=agent_id,
-        metadata={
-            "catchphrases": catchphrases,
-            "memoryAnchors": memory_anchors,
-        },
+        metadata=merged_metadata,
     )
 
     return PersonaBuildResult(

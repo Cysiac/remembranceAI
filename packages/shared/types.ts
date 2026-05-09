@@ -20,6 +20,10 @@ export interface PersonaMetadata {
   catchphrases: string[];
   memoryAnchors: MemoryAnchor[];
   eraTags?: string[];
+  /** Server-side only fields — do not show in the FE UI. */
+  systemPrompt?: string;
+  firstMessage?: string;
+  toneSummary?: string;
 }
 
 export interface Persona {

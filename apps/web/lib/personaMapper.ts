@@ -46,6 +46,9 @@ export function rowToPersona(row: PersonaRow): Persona {
         ? (meta.memoryAnchors as Persona["metadata"]["memoryAnchors"])
         : [],
       eraTags: Array.isArray(meta.eraTags) ? (meta.eraTags as string[]) : undefined,
+      systemPrompt: typeof meta.systemPrompt === "string" ? meta.systemPrompt : undefined,
+      firstMessage: typeof meta.firstMessage === "string" ? meta.firstMessage : undefined,
+      toneSummary: typeof meta.toneSummary === "string" ? meta.toneSummary : undefined,
     },
     errorMessage: row.error_message ?? undefined,
     createdAt: row.created_at,
