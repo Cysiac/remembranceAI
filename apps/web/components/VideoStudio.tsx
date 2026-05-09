@@ -19,6 +19,7 @@ export interface VideoStudioProps {
   candidatePhotoKeys: string[];
   /** Pass `?demo=1` through if the user is on the demo route. */
   isDemo?: boolean;
+  onReferencePhotoPreview?: (url: string) => void;
 }
 
 interface RenderState {
@@ -34,7 +35,12 @@ const PROMPT_TEMPLATES: string[] = [
   "Standing in the kitchen, smiling, recalling a small moment from a holiday morning.",
 ];
 
-export function VideoStudio({ personaId, candidatePhotoKeys, isDemo }: VideoStudioProps) {
+export function VideoStudio({
+  personaId,
+  candidatePhotoKeys,
+  isDemo,
+  onReferencePhotoPreview,
+}: VideoStudioProps) {
   const [scene, setScene] = useState<string>(PROMPT_TEMPLATES[0]);
   const [selectedKey, setSelectedKey] = useState<string>(
     candidatePhotoKeys[0] ?? "",
@@ -169,7 +175,13 @@ export function VideoStudio({ personaId, candidatePhotoKeys, isDemo }: VideoStud
             <input
               type="file"
               accept="image/*"
-              onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)}
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                setPendingFile(file);
+                if (file) {
+                  onReferencePhotoPreview?.(URL.createObjectURL(file));
+                }
+              }}
               disabled={isWorking}
               className="text-xs"
             />
