@@ -128,10 +128,11 @@ def build_persona(
     tone_summary = _tone_summary(samples)
 
     kb_docs = _summarize_kb_documents(samples)
-    kb_doc_ids: list[str] = []
+    kb_doc_pairs: list[tuple[str, str]] = []
     for doc_name, doc_body in kb_docs.items():
         try:
-            kb_doc_ids.append(elevenlabs_client.upload_kb_document(doc_name, doc_body))
+            doc_id = elevenlabs_client.upload_kb_document(doc_name, doc_body)
+            kb_doc_pairs.append((doc_name, doc_id))
         except Exception as exc:
             logger.warning("KB upload failed for %s: %s", doc_name, exc)
 
@@ -163,7 +164,7 @@ def build_persona(
         name=f"{name} memorial",
         voice_id=voice_id,
         system_prompt=system_prompt,
-        knowledge_base_doc_ids=kb_doc_ids,
+        knowledge_base_docs=kb_doc_pairs,
         first_message=first_message,
     )
 

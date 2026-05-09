@@ -6,6 +6,7 @@ import { rowToPersona } from "@/lib/personaMapper";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
 export async function GET(
   req: Request,
@@ -37,8 +38,9 @@ export async function GET(
     return NextResponse.json({ error: "persona_not_found" }, { status: 404 });
   }
 
-  return NextResponse.json(rowToPersona(data), {
-    headers: { "cache-control": "no-store" },
+  const persona = rowToPersona(data);
+  return NextResponse.json(persona, {
+    headers: { "cache-control": "no-store, max-age=0" },
   });
 }
 

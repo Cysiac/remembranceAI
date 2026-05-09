@@ -4,11 +4,11 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import type { GenerateVideoResponse } from "@shared/types";
+import type { GenerateVideoResponse, Persona } from "@shared/types";
 import { textToSpeech, simulateAgentReply } from "@/lib/elevenlabs";
 import { rowToPersona } from "@/lib/personaMapper";
 import { buildVideoScriptPrompt } from "@/lib/promptBuilder";
-import { getServiceSupabase } from "@/lib/supabaseServer";
+import { ensureBucket, getServiceSupabase } from "@/lib/supabaseServer";
 import { generateVeoVideo } from "@/lib/veo";
 import { muxAudioOntoVideo } from "@/lib/videoMux";
 
@@ -17,10 +17,12 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 const BodySchema = z.object({
-  persona_id: z.string().uuid(),
+  persona_id: z.string().min(1),
   scene: z.string().min(3).max(2_000),
   reference_photo_key: z.string().min(1).max(500),
 });
+
+const PersonaIdSchema = z.string().uuid();
 
 interface PersonaRow {
   id: string;
@@ -36,6 +38,7 @@ interface PersonaRow {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  const isDemo = isDemoRequest(req);
   const demoUrl = demoVideoUrl(req);
   if (demoUrl) {
     return NextResponse.json({ video_url: demoUrl } satisfies GenerateVideoResponse);
@@ -56,28 +59,28 @@ export async function POST(req: Request): Promise<Response> {
     );
   }
 
-  const supabase = getServiceSupabase();
   const { persona_id, scene, reference_photo_key } = parsed.data;
-
-  const { data, error } = await supabase
-    .from("personas")
-    .select(
-      "id, name, relationship, status, voice_id, agent_id, dataset_id, metadata, error_message, created_at",
-    )
-    .eq("id", persona_id)
-    .maybeSingle();
-
-  if (error) {
+  if (!isDemo && !PersonaIdSchema.safeParse(persona_id).success) {
     return NextResponse.json(
-      { error: "db_read_failed", detail: error.message },
+      { error: "invalid_body", issues: { fieldErrors: { persona_id: ["Invalid uuid"] } } },
+      { status: 400 },
+    );
+  }
+
+  let persona: Persona | null;
+  try {
+    persona = isDemo ? demoPersona(persona_id) : await loadPersona(persona_id);
+  } catch (err) {
+    return NextResponse.json(
+      { error: "db_read_failed", detail: errorMessage(err) },
       { status: 500 },
     );
   }
-  if (!data) {
+
+  if (!persona) {
     return NextResponse.json({ error: "persona_not_found" }, { status: 404 });
   }
 
-  const persona = rowToPersona(data as PersonaRow);
   if (persona.status !== "ready") {
     return NextResponse.json(
       { error: "persona_not_ready", status: persona.status },
@@ -142,10 +145,54 @@ export async function POST(req: Request): Promise<Response> {
   }
 }
 
+async function loadPersona(personaId: string): Promise<Persona | null> {
+  const supabase = getServiceSupabase();
+  const { data, error } = await supabase
+    .from("personas")
+    .select(
+      "id, name, relationship, status, voice_id, agent_id, dataset_id, metadata, error_message, created_at",
+    )
+    .eq("id", personaId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`db_read_failed: ${error.message}`);
+  }
+  if (!data) return null;
+  return rowToPersona(data as PersonaRow);
+}
+
+function isDemoRequest(req: Request): boolean {
+  const url = new URL(req.url);
+  return url.searchParams.get("demo") === "1";
+}
+
 function demoVideoUrl(req: Request): string | null {
   const url = new URL(req.url);
   if (url.searchParams.get("demo") !== "1") return null;
   return process.env.DEMO_VIDEO_URL || null;
+}
+
+function demoPersona(id: string): Persona | null {
+  const voiceId = process.env.DEMO_VOICE_ID;
+  const agentId = process.env.DEMO_AGENT_ID;
+  if (!voiceId || !agentId) return null;
+
+  return {
+    id,
+    name: "Grandma",
+    relationship: "grandmother",
+    status: "ready",
+    voice_id: voiceId,
+    agent_id: agentId,
+    metadata: {
+      catchphrases: ["come here, sweetheart", "put the kettle on"],
+      memoryAnchors: [],
+      firstMessage: "Hi sweetheart — it's Grandma. I'm so glad you came by.",
+      toneSummary: "warm, gentle, nostalgic",
+    },
+    createdAt: new Date(0).toISOString(),
+  };
 }
 
 async function downloadReferencePhoto(fileKey: string): Promise<{
@@ -193,6 +240,7 @@ async function uploadRenderedVideo(
   personaId: string,
   videoBytes: Buffer,
 ): Promise<string> {
+  await ensureBucket("videos");
   const supabase = getServiceSupabase();
   const key = `${personaId}/${randomUUID()}.mp4`;
   const { error } = await supabase.storage.from("videos").upload(key, videoBytes, {

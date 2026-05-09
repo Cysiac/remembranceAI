@@ -158,7 +158,7 @@ async function main(): Promise<void> {
     voiceId,
     systemPrompt,
     firstMessage: flags.firstMessage,
-    knowledgeBaseDocIds: [kbDocId],
+    knowledgeBaseDocs: [{ id: kbDocId, name: `${flags.name}-stories` }],
   });
   console.log(`  agent_id = ${agentId}`);
 
@@ -251,7 +251,7 @@ async function createAgent(args: {
   voiceId: string;
   systemPrompt: string;
   firstMessage: string;
-  knowledgeBaseDocIds: string[];
+  knowledgeBaseDocs: Array<{ id: string; name: string }>;
 }): Promise<string> {
   const payload = {
     name: args.name,
@@ -259,7 +259,11 @@ async function createAgent(args: {
       agent: {
         prompt: {
           prompt: args.systemPrompt,
-          knowledge_base: args.knowledgeBaseDocIds.map((id) => ({ id, type: "file" })),
+          knowledge_base: args.knowledgeBaseDocs.map((d) => ({
+            id: d.id,
+            type: "file",
+            name: d.name,
+          })),
         },
         first_message: args.firstMessage,
         language: "en",
