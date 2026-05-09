@@ -27,7 +27,7 @@ import adaption_pipeline
 import persona_builder
 import supabase_client
 from config import get_settings
-from formatters import format_files, write_jsonl
+from formatters import FormattedSample, format_files, write_jsonl
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger("worker")
@@ -167,6 +167,15 @@ async def _run_job(persona_id: str, file_keys: list[str]) -> None:
         supabase_client.update_persona(
             persona_id, dataset_id=adaption_result.dataset_id
         )
+        cleaned_rows = adaption_pipeline.load_cleaned_samples(
+            adaption_result.cleaned_jsonl_path
+        )
+        cleaned_samples = _samples_from_cleaned_rows(
+            cleaned_rows,
+            relationship=relationship,
+        )
+        if cleaned_samples:
+            samples = cleaned_samples
 
         persona_builder.build_persona(
             persona_id=persona_id,
@@ -182,3 +191,35 @@ async def _run_job(persona_id: str, file_keys: list[str]) -> None:
     finally:
         if not os.environ.get("KEEP_WORKER_TMP"):
             shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _samples_from_cleaned_rows(
+    rows: list[dict],
+    *,
+    relationship: str,
+) -> list[FormattedSample]:
+    samples: list[FormattedSample] = []
+    for row in rows:
+        context = row.get("context") if isinstance(row.get("context"), dict) else {}
+        text = str(
+            row.get("text")
+            or row.get("completion")
+            or row.get("response")
+            or row.get("output")
+            or ""
+        ).strip()
+        if len(text) < 8:
+            continue
+        samples.append(
+            FormattedSample(
+                text=text,
+                tone=str(row.get("tone") or context.get("tone") or "neutral"),
+                era=str(row.get("era") or context.get("era") or "unknown"),
+                relationship=str(
+                    row.get("relationship")
+                    or context.get("relationship")
+                    or relationship
+                ),
+            )
+        )
+    return samples
